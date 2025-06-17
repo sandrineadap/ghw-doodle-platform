@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from "react";
 
 type CanvasProps = {
   selectedColour: string;
+  brushSize: number;
 }
 
-const CanvasComponent = ({ selectedColour }: CanvasProps ) => {
+const CanvasComponent = ({ selectedColour, brushSize }: CanvasProps ) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [canvasContext, setCanvasContext] =
     useState<CanvasRenderingContext2D | null>(null);
 
+  // sets default brush style
   useEffect(() => {
     const canvas = canvasRef.current; // the current value of the ref
     if (canvas) {
@@ -21,18 +23,20 @@ const CanvasComponent = ({ selectedColour }: CanvasProps ) => {
       if (ctx) {
         ctx.lineCap = "round";
         ctx.strokeStyle = "#000000"; // default stroke colour
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 5; // default brush size
         setCanvasContext(ctx);
       }
     }
   }, []);
 
+  // update brush styles
   useEffect(() => {
     // update stroke colour from default to selected colour
     if(canvasContext) {
       canvasContext.strokeStyle = selectedColour;
+      canvasContext.lineWidth = brushSize;
     }
-  }, [selectedColour, canvasContext]); // this effect is dependent on selectedColour and canvasContext
+  }, [selectedColour, brushSize, canvasContext]); // this effect is dependent on selectedColour and canvasContext
 
   const getMouseCoordinates = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
