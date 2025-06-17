@@ -1,6 +1,14 @@
+import { useState } from "react";
 import CanvasComponent from "./CanvasComponent";
+import ToolbarComponent from "./ToolbarComponent";
 
 const App = () => {
+  const [selectedColour, setSelectedColour] = useState("#1e1e1e");
+
+  const handleColourChange = (colour: string) => {
+    setSelectedColour(colour);
+  };
+
   return (
     <main>
       <h1
@@ -13,7 +21,11 @@ const App = () => {
       >
         Doodle Canvas
       </h1>
-      <CanvasComponent />
+      <ToolbarComponent
+        selectedColour={selectedColour}
+        onColourChange={handleColourChange}
+      />
+      <CanvasComponent selectedColour={selectedColour}/>
     </main>
   );
 };
