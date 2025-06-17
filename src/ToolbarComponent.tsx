@@ -16,7 +16,10 @@ interface ToolbarProps {
   onColourChange: (color: string) => void;
 }
 
-const ToolbarComponent: React.FC<ToolbarProps> = ({ selectedColour, onColourChange }) => {
+const ToolbarComponent: React.FC<ToolbarProps> = ({
+  selectedColour,
+  onColourChange,
+}) => {
   return (
     <div
       style={{
@@ -27,17 +30,54 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({ selectedColour, onColourChan
         backgroundColor: "#f5f5f5",
         borderRadius: "8px",
         margin: "0 auto",
-        maxWidth: "800px"
+        maxWidth: "800px",
       }}
     >
-      {/* loop over colours with map and display them */}
+      {/* Custom Color Picker */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <label
+          htmlFor="colourPicker"
+          style={{
+            fontWeight: "bold",
+            alignSelf: "center", // vertically center
+          }}
+        >
+          Custom Colour:{" "}
+        </label>
+        <input
+          type="color"
+          id="colourPicker"
+          value={selectedColour}
+          onChange={(e) => onColourChange(e.target.value)}
+          style={{
+            width: "50px",
+            height: "40px",
+            border: `3px solid ${selectedColour}`,
+            borderRadius: "2px",
+            cursor: "pointer",
+          }}
+          title="Choose custom colour"
+        />
+      </div>
+
+      {/* Separator */}
+      <div
+        style={{
+          width: "2px",
+          height: "40px",
+          backgroundColor: "#ccc",
+          borderRadius: "4px",
+        }}
+      />
+
+      {/* Predefined Colours */}
       <label
         style={{
           fontWeight: "bold",
           alignSelf: "center", // vertically center
         }}
       >
-        Colors:
+        Colours:
       </label>
       {PREDEFINED_COLOURS.map((colour) => (
         <button
