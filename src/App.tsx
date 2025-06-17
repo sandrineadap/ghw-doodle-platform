@@ -1,11 +1,12 @@
-import { useState } from "react";
-import CanvasComponent from "./CanvasComponent";
+import { useState, useRef } from "react";
+import CanvasComponent, { type CanvasRef } from "./CanvasComponent";
 import ToolbarComponent from "./ToolbarComponent";
 
 const App = () => {
   const [selectedColour, setSelectedColour] = useState("#1e1e1e");
   const [brushSize, setBrushSize] = useState(5);
   const [isErasing, setIsErasing] = useState(false);
+  const canvasRef = useRef<CanvasRef>(null);
 
   const handleColourChange = (colour: string) => {
     setSelectedColour(colour);
@@ -17,6 +18,12 @@ const App = () => {
 
   const handleEraserToggle = (erasing: boolean) => {
     setIsErasing(erasing);
+  };
+
+  const handleClearCanvas = () => {
+    if(canvasRef.current) {
+      canvasRef.current.clearCanvas();
+    }
   }
 
   return (
@@ -38,8 +45,14 @@ const App = () => {
         onBrushSizeChange={handleBrushSizeChange}
         isErasing={isErasing}
         onEraserToggle={handleEraserToggle}
+        onClearCanvas={handleClearCanvas}
       />
-      <CanvasComponent selectedColour={selectedColour} brushSize={brushSize} isErasing={isErasing}/>
+      <CanvasComponent
+        ref={canvasRef}
+        selectedColour={selectedColour}
+        brushSize={brushSize}
+        isErasing={isErasing}
+      />
     </main>
   );
 };
