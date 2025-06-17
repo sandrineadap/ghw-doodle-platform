@@ -1,7 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const CanvasComponent = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [canvasContext, setCanvasContext] =
+    useState<CanvasRenderingContext2D | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current; // the current value of the ref
@@ -15,12 +18,50 @@ const CanvasComponent = () => {
         ctx.lineCap = "round";
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 5;
-        // TODO: remove this later. just to show that I can draw a rectangle in the canvas
-        ctx.fillStyle = "#ffaa00";
-        ctx.fillRect(0, 0, 100, 100);
+        setCanvasContext(ctx);
       }
     }
   }, []);
+
+  const getMouseCoordinates = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return { x: 0, y: 0 };
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    console.log("event::", event.clientX, event.clientY)
+    return {
+      x: event.clientX - rect.left, // subtraction to translate the x & y axis
+      y: event.clientY - rect.top,  // subtraction to account for the canvas rectangle
+    }
+  };
+
+  const startDrawing = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasContext) return;
+
+    const { x, y } = getMouseCoordinates(event);
+
+    console.log({ x, y })
+
+    canvasContext.beginPath(); // start a new drawing path
+    canvasContext.moveTo(x, y);
+    setIsDrawing(true);
+  };
+  const draw = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !canvasContext) return;
+
+    const { x, y } = getMouseCoordinates(event);
+
+    canvasContext.lineTo(x, y);
+    canvasContext.stroke(); // draw a line
+  };
+  const stopDrawing = () => {
+    if (!canvasContext) return;
+
+    canvasContext.closePath(); // close the current drawing path
+    setIsDrawing(false);
+  };
 
   return (
     <div
@@ -33,11 +74,10 @@ const CanvasComponent = () => {
       <canvas
         ref={canvasRef}
         id="DoodleCanvas"
-        // TODO: Implement mouse functionalities
-        // onMouseDown={}   // when to start drawing
-        // onMouseUp={}     // when to stop drawing
-        // onMouseMove={}   // the actual drawing part
-        // onMouseLeave={}  // stop drawing when it goes out of the canvas
+        onMouseDown={startDrawing} // when to start drawing
+        onMouseUp={stopDrawing} // when to stop drawing
+        onMouseMove={draw} // the actual drawing part
+        onMouseLeave={stopDrawing} // stop drawing when it goes out of the canvas
         style={{
           border: "2px solid #333333",
           borderRadius: "8px",
