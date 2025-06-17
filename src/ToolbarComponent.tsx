@@ -35,6 +35,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
     <div
       style={{
         display: "flex",
+        flexWrap: "wrap",
         justifyContent: "center",
         gap: "10px",
         padding: "10px",
@@ -42,6 +43,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
         borderRadius: "8px",
         margin: "0 auto",
         maxWidth: "1000px",
+        alignItems: "center",
       }}
     >
       {/* Custom Color Picker */}
@@ -50,7 +52,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
           htmlFor="colourPicker"
           style={{ fontWeight: "bold", alignSelf: "center" }}
         >
-          Custom Colour:{" "}
+          Custom Colour:
         </label>
         <input
           type="color"
@@ -89,8 +91,8 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
           aria-label={`Select colour ${colour}`}
           onClick={() => onColourChange(colour)}
           style={{
-            width: "40px",
-            height: "40px",
+            width: "30px",
+            height: "30px",
             backgroundColor: colour,
             borderRadius: "50%",
             cursor: "pointer",
@@ -111,8 +113,10 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
       />
 
       {/* Brush Size Selector */}
-      <div style={{display: "flex", gap: "10px"}}>
-        <label style={{ fontWeight: "bold", alignSelf: "center" }}>Brush Size:</label>
+      <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+        <label style={{ fontWeight: "bold", alignSelf: "center" }}>
+          Brush Size:
+        </label>
         {BRUSH_SIZES.map(({ size, label }) => (
           <button
             key={size}
@@ -129,6 +133,23 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
             {label}
           </button>
         ))}
+      </div>
+
+      {/* Brush Size Slider */}
+      <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+        <input
+          type="range"
+          min="1"
+          max="20"
+          value={brushSize}
+          onChange={(e) => onBrushSizeChange(parseInt(e.target.value))}
+          style={{ width: "100px", cursor: "pointer" }}
+        />
+        <span
+          style={{ fontSize: "12px", fontWeight: "bold", minWidth: "30px" }}
+        >
+          {brushSize}px
+        </span>
       </div>
     </div>
   );

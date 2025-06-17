@@ -98,8 +98,9 @@ const CanvasComponent = ({ selectedColour, brushSize }: CanvasProps ) => {
           borderRadius: "8px",
           cursor: "crosshair",
           backgroundColor: "white",
-          width: "850px",
-          height: "600px",
+          width: "90vw",
+          height: "80vh",
+          color: "#000",
         }}
       >
         Your browser does not suport HTML5 canvas API!
