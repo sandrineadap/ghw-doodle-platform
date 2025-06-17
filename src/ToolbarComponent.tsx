@@ -23,6 +23,8 @@ interface ToolbarProps {
   onColourChange: (color: string) => void;
   brushSize: number;
   onBrushSizeChange: (size: number) => void;
+  isErasing: boolean;
+  onEraserToggle: (isErasing: boolean) => void;
 }
 
 const ToolbarComponent: React.FC<ToolbarProps> = ({
@@ -30,6 +32,8 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
   onColourChange,
   brushSize,
   onBrushSizeChange,
+  isErasing,
+  onEraserToggle,
 }) => {
   return (
     <div
@@ -42,7 +46,7 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
         backgroundColor: "#f5f5f5",
         borderRadius: "8px",
         margin: "0 auto",
-        maxWidth: "1000px",
+        maxWidth: "90vw",
         alignItems: "center",
       }}
     >
@@ -112,10 +116,10 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
         }}
       />
 
-      {/* Brush Size Selector */}
+      {/* Brush/Eraser Size Selector */}
       <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
         <label style={{ fontWeight: "bold", alignSelf: "center" }}>
-          Brush Size:
+          Brush/Eraser Size:
         </label>
         {BRUSH_SIZES.map(({ size, label }) => (
           <button
@@ -150,6 +154,42 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
         >
           {brushSize}px
         </span>
+      </div>
+
+      {/* Separator */}
+      <div
+        style={{
+          width: "2px",
+          height: "40px",
+          backgroundColor: "#ccc",
+          borderRadius: "4px",
+        }}
+      />
+
+      {/* Eraser Tool */}
+      <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+        <label style={{ fontWeight: "bold", alignSelf: "center" }}>Tools:</label>
+        <button
+          style={{
+            padding: "10px 15px",
+            backgroundColor: isErasing ? "#af0202" : "#fff",
+            color: isErasing ? "#fff" : "#333",
+            border: "2px solid #af0202",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "bold",
+
+          }}
+          onClick={() => onEraserToggle(!isErasing)}
+          title={
+            isErasing
+              ? "Currently Eraser, Switch to Brush"
+              : "Currently Brush, Switch to Eraser"
+          }
+        >
+          {isErasing ? "🧽 Eraser" : "🖌️ Brush"}
+        </button>
       </div>
     </div>
   );

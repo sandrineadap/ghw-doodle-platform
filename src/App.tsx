@@ -5,6 +5,7 @@ import ToolbarComponent from "./ToolbarComponent";
 const App = () => {
   const [selectedColour, setSelectedColour] = useState("#1e1e1e");
   const [brushSize, setBrushSize] = useState(5);
+  const [isErasing, setIsErasing] = useState(false);
 
   const handleColourChange = (colour: string) => {
     setSelectedColour(colour);
@@ -13,6 +14,10 @@ const App = () => {
   const handleBrushSizeChange = (size: number) => {
     setBrushSize(size);
   };
+
+  const handleEraserToggle = (erasing: boolean) => {
+    setIsErasing(erasing);
+  }
 
   return (
     <main>
@@ -31,8 +36,10 @@ const App = () => {
         onColourChange={handleColourChange}
         brushSize={brushSize}
         onBrushSizeChange={handleBrushSizeChange}
+        isErasing={isErasing}
+        onEraserToggle={handleEraserToggle}
       />
-      <CanvasComponent selectedColour={selectedColour} brushSize={brushSize}/>
+      <CanvasComponent selectedColour={selectedColour} brushSize={brushSize} isErasing={isErasing}/>
     </main>
   );
 };

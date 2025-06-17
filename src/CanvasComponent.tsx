@@ -3,15 +3,16 @@ import { useEffect, useRef, useState } from "react";
 type CanvasProps = {
   selectedColour: string;
   brushSize: number;
+  isErasing: boolean;
 }
 
-const CanvasComponent = ({ selectedColour, brushSize }: CanvasProps ) => {
+const CanvasComponent = ({ selectedColour, brushSize, isErasing }: CanvasProps ) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [canvasContext, setCanvasContext] =
     useState<CanvasRenderingContext2D | null>(null);
 
-  // sets default brush style
+  // sets defaults on mount
   useEffect(() => {
     const canvas = canvasRef.current; // the current value of the ref
     if (canvas) {
@@ -29,14 +30,19 @@ const CanvasComponent = ({ selectedColour, brushSize }: CanvasProps ) => {
     }
   }, []);
 
-  // update brush styles
+  // update brush styles (colour, size, eraser, etc.)
   useEffect(() => {
-    // update stroke colour from default to selected colour
     if(canvasContext) {
-      canvasContext.strokeStyle = selectedColour;
+      if (isErasing) {
+        canvasContext.globalCompositeOperation = "destination-out"; // what tells the dom to delete
+        canvasContext.strokeStyle = "rgba(0, 0, 0, 1)"; // completely transparent
+      } else {
+        canvasContext.globalCompositeOperation = "source-over";
+        canvasContext.strokeStyle = selectedColour;
+      }
       canvasContext.lineWidth = brushSize;
     }
-  }, [selectedColour, brushSize, canvasContext]); // this effect is dependent on selectedColour and canvasContext
+  }, [selectedColour, brushSize, isErasing, canvasContext]); // this effect is dependent on selectedColour and canvasContext
 
   const getMouseCoordinates = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -99,7 +105,7 @@ const CanvasComponent = ({ selectedColour, brushSize }: CanvasProps ) => {
           cursor: "crosshair",
           backgroundColor: "white",
           width: "90vw",
-          height: "80vh",
+          height: "70vh",
           color: "#000",
         }}
       >
