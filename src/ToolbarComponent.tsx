@@ -1,3 +1,5 @@
+import type { ToolTypes } from "./App";
+
 const PREDEFINED_COLOURS = [
   "#1e1e1e",
   "#b10909",
@@ -28,6 +30,8 @@ interface ToolbarProps {
   onClearCanvas: () => void;
   canUndo: boolean;
   onUndo: () => void;
+  currentTool: ToolTypes;
+  onToolChange: (tool: ToolTypes) => void;
 }
 
 const ToolbarComponent: React.FC<ToolbarProps> = ({
@@ -40,6 +44,8 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
   onClearCanvas,
   canUndo,
   onUndo,
+  currentTool,
+  onToolChange,
 }) => {
   return (
     <div
@@ -172,12 +178,12 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
         }}
       />
 
-      {/* Tools */}
+      {/* Drawing Tools */}
       <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
         <label style={{ fontWeight: "bold", alignSelf: "center" }}>
           Tools:
         </label>
-        {/* Eraser */}
+        {/* Eraser Button */}
         <button
           style={{
             padding: "10px 15px",
@@ -190,15 +196,112 @@ const ToolbarComponent: React.FC<ToolbarProps> = ({
             fontWeight: "bold",
           }}
           onClick={() => onEraserToggle(!isErasing)}
-          title={
-            isErasing
-              ? "Currently Eraser, Switch to Brush"
-              : "Currently Brush, Switch to Eraser"
-          }
+          title="Eraser"
         >
-          {isErasing ? "🧽 Eraser" : "🖌️ Brush"}
+          🧽 Eraser
         </button>
 
+        {/* Brush Button */}
+        <button
+          style={{
+            padding: "10px 15px",
+            backgroundColor:
+              currentTool === "brush" && !isErasing ? "#6262fc" : "#fff",
+            color: currentTool === "brush" && !isErasing ? "#fff" : "#333",
+            border: "2px solid #6262fc",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "bold",
+          }}
+          onClick={() => {
+            onToolChange("brush");
+            onEraserToggle(false);
+          }}
+          title="Pencil/Brush Tool"
+        >
+          🖌️ Brush
+        </button>
+
+        {/* Line Button */}
+        <button
+          style={{
+            padding: "10px 15px",
+            backgroundColor: currentTool === "line" ? "#6262fc" : "#fff",
+            color: currentTool === "line" ? "#fff" : "#333",
+            border: "2px solid #6262fc",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "bold",
+          }}
+          onClick={() => {
+            onToolChange("line");
+            onEraserToggle(false);
+          }}
+          title="Draw straight line"
+        >
+          ⎥ Line
+        </button>
+
+        {/* Rectangle Button */}
+        <button
+          style={{
+            padding: "10px 15px",
+            backgroundColor: currentTool === "rectangle" ? "#6262fc" : "#fff",
+            color: currentTool === "rectangle" ? "#fff" : "#333",
+            border: "2px solid #6262fc",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "bold",
+          }}
+          onClick={() => {
+            onToolChange("rectangle");
+            onEraserToggle(false);
+          }}
+          title="Draw rectangle"
+        >
+          ⏹ Rectangle
+        </button>
+
+        {/* Circle Button */}
+        <button
+          style={{
+            padding: "10px 15px",
+            backgroundColor: currentTool === "circle" ? "#6262fc" : "#fff",
+            color: currentTool === "circle" ? "#fff" : "#333",
+            border: "2px solid #6262fc",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "bold",
+          }}
+          onClick={() => {
+            onToolChange("circle");
+            onEraserToggle(false);
+          }}
+          title="Draw circle"
+        >
+          ⏺ Circle
+        </button>
+      </div>
+
+      {/* Separator */}
+      <div
+        style={{
+          width: "2px",
+          height: "40px",
+          backgroundColor: "#ccc",
+          borderRadius: "4px",
+        }}
+      />
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+        <label style={{ fontWeight: "bold", alignSelf: "center" }}>
+          Actions:
+        </label>
         {/* Clear Canvas */}
         <button
           style={{

@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { ToolTypes } from "./App";
 
 export type CanvasRef = {
   clearCanvas: () => void;
@@ -16,6 +17,7 @@ type CanvasProps = {
   selectedColour: string;
   brushSize: number;
   isErasing: boolean;
+  currentTool: ToolTypes;
   onUpdateUndoState: () => void;
   ref: React.RefObject<CanvasRef | null>;
 };
@@ -24,6 +26,7 @@ const CanvasComponent = ({
   selectedColour,
   brushSize,
   isErasing,
+  currentTool,
   onUpdateUndoState,
   ref,
 }: CanvasProps) => {
@@ -39,6 +42,13 @@ const CanvasComponent = ({
     history: [],
     currentIndex: -1,
   });
+
+  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [previewCanvas, setPreviewCanvas] = useState<HTMLCanvasElement | null>(
+    null
+  );
 
   const maxHistorySize = 20; // Limit history to save
 
@@ -57,6 +67,15 @@ const CanvasComponent = ({
         ctx.lineWidth = 5; // default brush size
         setCanvasContext(ctx);
       }
+
+      // Create preview canvas for shapes
+      const preview = document.createElement("canvas");
+      preview.width = width;
+      preview.height = height;
+      // Make sure the preview canvas is added to the DOM, even if it's hidden
+      preview.style.display = 'none'; // Hide the preview canvas
+      document.body.appendChild(preview); // Append to the body or another appropriate container
+      setPreviewCanvas(preview);
     }
   }, []);
 
@@ -137,6 +156,49 @@ const CanvasComponent = ({
     }
   }, [selectedColour, brushSize, isErasing, canvasContext]); // this effect is dependent on selectedColour and canvasContext
 
+  const drawLine = (
+    ctx: CanvasRenderingContext2D,
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number
+  ) => {
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    ctx.closePath();
+  };
+  const drawRectangle = (
+    ctx: CanvasRenderingContext2D,
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number
+  ) => {
+    const width = endX - startX;
+    const height = endY - startY;
+    ctx.beginPath();
+    ctx.rect(startX, startY, width, height);
+    ctx.stroke();
+    ctx.closePath();
+  };
+  const drawCircle = (
+    ctx: CanvasRenderingContext2D,
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number
+  ) => {
+    const radius = Math.sqrt(
+      Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2)
+    );
+    ctx.beginPath();
+    ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.closePath();
+  };
+
   const getMouseCoordinates = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -158,30 +220,121 @@ const CanvasComponent = ({
 
     const { x, y } = getMouseCoordinates(event);
 
-    console.log({ x, y });
-
-    canvasContext.beginPath(); // start a new drawing path
-    canvasContext.moveTo(x, y);
-    setIsDrawing(true);
+    if (currentTool === "brush") {
+      canvasContext.beginPath(); // start a new drawing path
+      canvasContext.moveTo(x, y);
+      setIsDrawing(true);
+    } else {
+      setStartPoint({ x, y }); // set the starting point for shapes
+      setIsDrawing(true);
+      if (canvasRef.current && previewCanvas) {
+        const canvas = canvasRef.current;
+        const currentImageData = canvasContext.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+        const previewCtx = previewCanvas.getContext("2d");
+        if (previewCtx) {
+          previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height); // clear the preview canvas
+          previewCtx.putImageData(currentImageData, 0, 0); // copy current canvas state to preview
+        }
+      }
+    }
   };
-
   const draw = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !canvasContext) return;
 
     const { x, y } = getMouseCoordinates(event);
 
-    canvasContext.lineTo(x, y);
-    canvasContext.stroke(); // draw a line
-  };
+    if (currentTool === "brush") {
+      canvasContext.lineTo(x, y);
+      canvasContext.stroke(); // draw a line
+    } else if (startPoint) {
+      if (!canvasRef.current || !previewCanvas) return;
 
-  const stopDrawing = () => {
+      const canvas = canvasRef.current;
+      const previewCtx = previewCanvas.getContext("2d");
+      if (!previewCtx) return;
+
+      const originalImageData = previewCtx.getImageData(
+        0,
+        0,
+        previewCanvas.width,
+        previewCanvas.height
+      ); // take a snapshot of the preview canvas and save it
+      canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+      canvasContext.putImageData(originalImageData, 0, 0);
+
+      // save the original brush styles before drawing the preview
+      const originalStrokeStyle = canvasContext.strokeStyle;
+      const originalLineWidth = canvasContext.lineWidth;
+      const originalCompositeOperation = canvasContext.globalCompositeOperation;
+
+      canvasContext.globalAlpha = 0.7; // make the preview drawing semi-transparent
+
+      switch (currentTool) {
+        case "line":
+          drawLine(canvasContext, startPoint.x, startPoint.y, x, y);
+          break;
+        case "rectangle":
+          drawRectangle(canvasContext, startPoint.x, startPoint.y, x, y);
+          break;
+        case "circle":
+          drawCircle(canvasContext, startPoint.x, startPoint.y, x, y);
+          break;
+        default:
+          break;
+      }
+
+      canvasContext.globalAlpha = 1; // reset the alpha to fully opaque
+      canvasContext.strokeStyle = originalStrokeStyle;
+      canvasContext.lineWidth = originalLineWidth;
+      canvasContext.globalCompositeOperation = originalCompositeOperation;
+    }
+  };
+  const stopDrawing = (event?: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasContext) return;
 
     // only close the path & save state if we were drawing
     // this prevents saving empty paths
     // which would cause the undo to not work properly
     if (isDrawing) {
-      canvasContext.closePath(); // close the current drawing path
+      if (currentTool === "brush") {
+        canvasContext.closePath(); // close the current drawing path
+      } else if (startPoint && event) {
+        const { x, y } = getMouseCoordinates(event);
+
+        if (canvasRef.current && previewCanvas) {
+          const canvas = canvasRef.current;
+          const previewCtx = previewCanvas.getContext("2d");
+          if (previewCtx) {
+            const originalImageData = previewCtx.getImageData(
+              0,
+              0,
+              previewCanvas.width,
+              previewCanvas.height
+            ); // take a snapshot of the preview canvas and save it
+            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+            canvasContext.putImageData(originalImageData, 0, 0); // put preview canvas drawing into main canvas
+          }
+        }
+        switch (currentTool) {
+          case "line":
+            drawLine(canvasContext, startPoint.x, startPoint.y, x, y);
+            break;
+          case "rectangle":
+            drawRectangle(canvasContext, startPoint.x, startPoint.y, x, y);
+            break;
+          case "circle":
+            drawCircle(canvasContext, startPoint.x, startPoint.y, x, y);
+            break;
+          default:
+            break;
+        }
+        setStartPoint(null); // reset the start point for shapes
+      }
       setIsDrawing(false);
       saveCanvasState(); // save canvas state when we stop drawing
     }
