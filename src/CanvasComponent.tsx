@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -7,12 +8,15 @@ import {
 
 export type CanvasRef = {
   clearCanvas: () => void;
+  undo: () => void;
+  canUndo: () => boolean;
 };
 
 type CanvasProps = {
   selectedColour: string;
   brushSize: number;
   isErasing: boolean;
+  onUpdateUndoState: () => void;
   ref: React.RefObject<CanvasRef | null>;
 };
 
@@ -20,14 +24,25 @@ const CanvasComponent = ({
   selectedColour,
   brushSize,
   isErasing,
+  onUpdateUndoState,
   ref,
 }: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [canvasContext, setCanvasContext] =
     useState<CanvasRenderingContext2D | null>(null);
 
-  // sets defaults on mount
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [historyState, setHistoryState] = useState<{
+    history: string[];
+    currentIndex: number;
+  }>({
+    history: [],
+    currentIndex: -1,
+  });
+
+  const maxHistorySize = 20; // Limit history to save
+
+  // sets up the drawing canvas and sets default brush styles on mount
   useEffect(() => {
     const canvas = canvasRef.current; // the current value of the ref
     if (canvas) {
@@ -44,6 +59,69 @@ const CanvasComponent = ({
       }
     }
   }, []);
+
+  // save the initial blank canvas
+  useEffect(() => {
+    if (canvasContext && canvasRef.current) {
+      setTimeout(() => {
+        const imageData = canvasRef.current!.toDataURL(); // keeps track of the image
+        setHistoryState({
+          history: [imageData],
+          currentIndex: 0,
+        });
+      }, 0); // 0 can be changed to however long you want to wait before invoking a save
+    }
+  }, [canvasContext]);
+
+  // save the canvas (called after stopDrawing())
+  const saveCanvasState = useCallback(() => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const imageData = canvas.toDataURL();
+
+      setHistoryState((prevState) => {
+        const newHistory = prevState.history.slice(
+          0,
+          prevState.currentIndex + 1
+        );
+        // add a new state
+        newHistory.push(imageData);
+
+        // calculate new index of undo
+        let newIndex = newHistory.length - 1;
+        // handle reached max history
+        if (newHistory.length > maxHistorySize) {
+          newHistory.shift(); // removes first element in array
+          newIndex - newHistory.length - 1;
+        }
+
+        return {
+          history: newHistory,
+          currentIndex: newIndex,
+        };
+      });
+
+      if (onUpdateUndoState) {
+        setTimeout(onUpdateUndoState, 0);
+      }
+    }
+  }, [maxHistorySize, onUpdateUndoState]);
+
+  // the actual undoing
+  const restoreCanvasState = useCallback(
+    (imageData: string) => {
+      if (canvasContext && canvasRef.current) {
+        const canvas = canvasRef.current;
+        const img = new Image();
+        img.onload = () => {
+          canvasContext.clearRect(0, 0, canvas.width, canvas.height); // clear canvas so you don't draw on top of previous strokes
+          canvasContext.drawImage(img, 0, 0); // draw image (has nothing yet)
+        };
+        img.src = imageData; // image now has imageData (previous state drawing)
+      }
+    },
+    [canvasContext]
+  );
 
   // update brush styles (colour, size, eraser, etc.)
   useEffect(() => {
@@ -66,10 +144,12 @@ const CanvasComponent = ({
     }
 
     const rect = canvas.getBoundingClientRect();
-    // console.log("event::", event.clientX, event.clientY)
+    const scaleX = canvas.width / rect.width; // scale factor for x-axis
+    const scaleY = canvas.height / rect.height; // scale factor for y-axis
+
     return {
-      x: event.clientX - rect.left, // subtraction to translate the x & y axis
-      y: event.clientY - rect.top, // subtraction to account for the canvas rectangle
+      x: (event.clientX - rect.left) * scaleX, // subtraction to translate the x & y axis
+      y: (event.clientY - rect.top) * scaleY, // subtraction to account for the canvas rectangle
     };
   };
 
@@ -84,6 +164,7 @@ const CanvasComponent = ({
     canvasContext.moveTo(x, y);
     setIsDrawing(true);
   };
+
   const draw = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !canvasContext) return;
 
@@ -92,11 +173,18 @@ const CanvasComponent = ({
     canvasContext.lineTo(x, y);
     canvasContext.stroke(); // draw a line
   };
+
   const stopDrawing = () => {
     if (!canvasContext) return;
 
-    canvasContext.closePath(); // close the current drawing path
-    setIsDrawing(false);
+    // only close the path & save state if we were drawing
+    // this prevents saving empty paths
+    // which would cause the undo to not work properly
+    if (isDrawing) {
+      canvasContext.closePath(); // close the current drawing path
+      setIsDrawing(false);
+      saveCanvasState(); // save canvas state when we stop drawing
+    }
   };
 
   useImperativeHandle(
@@ -110,10 +198,32 @@ const CanvasComponent = ({
             canvasRef.current.width,
             canvasRef.current.height
           ); // clears that part of the canvas
+          saveCanvasState(); // save the cleared canvas so it's undoable
         }
       },
+      undo: () => {
+        if (historyState.currentIndex > 0) {
+          const prevIndex = historyState.currentIndex - 1;
+          setHistoryState((prev) => ({
+            ...prev, // everything else stays the same
+            // only change the current index to the previous index
+            currentIndex: prevIndex,
+          }));
+          restoreCanvasState(historyState.history[prevIndex]);
+          if (onUpdateUndoState) {
+            setTimeout(onUpdateUndoState, 0);
+          }
+        }
+      },
+      canUndo: () => historyState.currentIndex > 0,
     }),
-    [canvasContext]
+    [
+      canvasContext,
+      historyState,
+      onUpdateUndoState,
+      restoreCanvasState,
+      saveCanvasState,
+    ]
   );
 
   return (
